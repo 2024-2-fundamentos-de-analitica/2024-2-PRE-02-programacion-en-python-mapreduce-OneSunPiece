@@ -23,8 +23,21 @@ from itertools import groupby
 #     ('text2.txt'. 'hypotheses.')
 #   ]
 #
-def load_input(input_directory):
-    """Funcion load_input"""
+def load_input(input_directory:str)->list:
+    """Funcion load_input
+    params:
+        input_directory: str
+    return: 
+        list_files: list[tuple]
+    """
+
+    list_files: list = []
+    for file in glob.glob(f"{input_directory}/*.txt"):
+        with open(file, "r") as file:
+            for line in file:
+                list_files.append((os.path.basename(file.name), line))
+    
+    return list_files
 
 
 #
@@ -32,8 +45,21 @@ def load_input(input_directory):
 # función anterior y retorna una lista de tuplas (clave, valor). Esta función
 # realiza el preprocesamiento de las líneas de texto,
 #
-def line_preprocessing(sequence):
-    """Line Preprocessing"""
+def line_preprocessing(sequence:list[tuple]) -> list[tuple]:
+    """Line Preprocessing
+    params:
+        sequence: list[tuple]
+    return: 
+        list_preprocessed: list[tuple]
+    """
+
+    preprocessing = lambda x: x.lower().replace(",", "").replace(".", "").replace(":", "").replace(";", "").replace("!", "").replace("?", "")
+    list_preprocessed: list = []
+
+    for folder, line in sequence:
+        list_preprocessed.append((folder, preprocessing(line)))
+    
+    return list_preprocessed
 
 
 #
@@ -48,8 +74,21 @@ def line_preprocessing(sequence):
 #     ...
 #   ]
 #
-def mapper(sequence):
-    """Mapper"""
+def mapper(sequence) -> list[tuple]:
+    """Mapper
+    params:
+        sequence: list
+    return: 
+        words_count: list[tuple]
+    """
+
+    words_count: list = []
+
+    for _, line in sequence:
+        for word in line.split():
+            words_count.append((word, 1))
+    return words_count
+
 
 
 #
@@ -63,8 +102,15 @@ def mapper(sequence):
 #     ...
 #   ]
 #
-def shuffle_and_sort(sequence):
-    """Shuffle and Sort"""
+def shuffle_and_sort(sequence) -> list[tuple]:
+    """Shuffle and Sort
+    params:
+        sequence: list[tuple]
+    return: 
+        list[tuple]
+    """
+
+    return sorted(sequence)
 
 
 #
@@ -73,17 +119,40 @@ def shuffle_and_sort(sequence):
 # ejemplo, la reducción indica cuantas veces aparece la palabra analytics en el
 # texto.
 #
-def reducer(sequence):
-    """Reducer"""
+def reducer(sequence) -> list[tuple]:
+    """Reducer
+    params:
+        sequence: list
+    return: 
+        list_reducer: list[tuple]
+    """
+    
+    list_reducer: list = []
+
+    for key, group in groupby(sequence, lambda x: x[0]):
+        list_reducer.append((key, sum([value for _, value in group])))
+    
+    return list_reducer
 
 
 #
 # Escriba la función create_ouptput_directory que recibe un nombre de
 # directorio y lo crea. Si el directorio existe, lo borra
 #
-def create_ouptput_directory(output_directory):
-    """Create Output Directory"""
+def create_ouptput_directory(output_directory) -> None:
+    """Create Output Directory
+    params:
+        output_directory: str
+    return:
+        output_directory: None
+    """
+    
+    if os.path.exists(output_directory):
+        os.system(f"rm -Rf {output_directory}")
+        
+    os.mkdir(output_directory)
 
+    return None
 
 #
 # Escriba la función save_output, la cual almacena en un archivo de texto
@@ -94,22 +163,69 @@ def create_ouptput_directory(output_directory):
 # separados por un tabulador.
 #
 def save_output(output_directory, sequence):
-    """Save Output"""
+    """Save Output
+    params:
+        output_directory: str
+        sequence: list
+    return: 
+        None
+    """
+    
+    with open(f"{output_directory}/part-00000", "w") as file:
+        for key, value in sequence:
+            file.write(f"{key}\t{value}\n")
+    
+    return None
 
 
 #
 # La siguiente función crea un archivo llamado _SUCCESS en el directorio
 # entregado como parámetro.
 #
-def create_marker(output_directory):
-    """Create Marker"""
+def create_marker(output_directory) -> None:
+    """Create Marker
+    params:
+        output_directory: str
+    return:
+        None
+    """
+
+    with open(f"{output_directory}/_SUCCESS", "w") as file:
+        pass
+
+    return None
 
 
 #
 # Escriba la función job, la cual orquesta las funciones anteriores.
 #
 def run_job(input_directory, output_directory):
-    """Job"""
+    """Job
+    Orchestrator Function
+    params:
+        input_directory: str
+        output_directory: str
+    return:
+        None
+    """
+    
+    # 1. Create Directory
+    create_ouptput_directory(output_directory)
+    # 2. Load Texts
+    sequence = load_input(input_directory)
+    # 3. Preprocessing
+    sequence = line_preprocessing(sequence)
+    # 4. Maps, order and sort
+    sequence = mapper(sequence)
+    sequence = shuffle_and_sort(sequence)
+    sequence = reducer(sequence)\
+    # 5. Save Output
+    save_output(output_directory, sequence)
+    # 6. Create files
+    create_marker(output_directory)
+
+    return None
+
 
 
 if __name__ == "__main__":
